@@ -9,11 +9,11 @@
 namespace Refl {
 template<typename cls>
 struct Field {
-    std::string getName() { return m_name_; }
+    std::string getName() const { return m_name_; }
     virtual bool setValue(cls* obj, void* value) = 0;
-    virtual void* getValue(cls* obj) = 0;
-    virtual std::string getTypeName() = 0;
-    virtual const std::type_info& getTypeInfo() = 0;
+    virtual void* getValue(cls* obj) const = 0;
+    virtual std::string getTypeName() const = 0;
+    virtual const std::type_info& getTypeInfo() const = 0;
 
     template<typename T>
     bool setFieldValue(cls* obj, T value) {
@@ -62,15 +62,15 @@ struct TypeField: public Field<cls> {
         return realSetValue(obj, value);
     }
 
-    void* getValue(cls* obj) override {
+    void* getValue(cls* obj) const override {
         return realGetValue(obj);
     }
 
-    std::string getTypeName() override {
+    std::string getTypeName() const override {
         return typeid(type).name();
     }
 
-    const std::type_info& getTypeInfo() override {
+    const std::type_info& getTypeInfo() const override {
         return typeid(type);
     }
 
@@ -93,12 +93,12 @@ struct TypeField: public Field<cls> {
     }
 
     template<bool U = is_static_member>
-    typename std::enable_if<U, void>::type* realGetValue(cls* obj) {
+    typename std::enable_if<U, void>::type* realGetValue(cls* obj) const {
         return m_static_field_pointer_;
     }
 
     template<bool U = is_static_member>
-    typename std::enable_if<!U, void>::type* realGetValue(cls* obj) {
+    typename std::enable_if<!U, void>::type* realGetValue(cls* obj) const {
         if (obj == nullptr) {
             return nullptr;
         }
