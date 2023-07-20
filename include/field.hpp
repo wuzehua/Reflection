@@ -2,9 +2,9 @@
 
 #include <string>
 #include <optional>
-#include <type_traits>
-#include <typeinfo>
 #include <utility>
+
+#include "type.hpp"
 
 namespace Refl {
 template<typename cls>
@@ -13,7 +13,7 @@ struct Field {
     virtual bool setValue(cls* obj, void* value) = 0;
     virtual void* getValue(cls* obj) const = 0;
     virtual std::string getTypeName() const = 0;
-    virtual const std::type_info& getTypeInfo() const = 0;
+    virtual const TypeBase& getTypeInfo() const = 0;
 
     template<typename T>
     bool setFieldValue(cls* obj, T value) {
@@ -67,11 +67,11 @@ struct TypeField: public Field<cls> {
     }
 
     std::string getTypeName() const override {
-        return typeid(type).name();
+        return TypeBase::getType<type>().getName();
     }
 
-    const std::type_info& getTypeInfo() const override {
-        return typeid(type);
+    const TypeBase& getTypeInfo() const override {
+        return TypeBase::getType<type>();
     }
 
   private:

@@ -22,8 +22,8 @@ int main(int argc, char** argv)
         .registerField("c", &A::c)
         .registerField("d", &A::d);    
     A test{};
-    test.a = 10;
-    test.b = 20;
+    test.a = 15;
+    test.b = 25;
     test.c = 100.5f;
     test.d = "test";
 
@@ -37,15 +37,15 @@ int main(int argc, char** argv)
         auto name = strong_field->getName();
         auto value = strong_field->getValue(&test);
         const auto& type = strong_field->getTypeInfo();
-        if (type == typeid(int)) {
-            auto type_pointer = static_cast<int*>(value);
-            std::cout << "name: " << name << " value: " << *type_pointer << std::endl;
-        } else if (type == typeid(float)) {
-            auto type_pointer = static_cast<float*>(value);
-            std::cout << "name: " << name << " value: " << *type_pointer << std::endl;
-        } else if (type == typeid(std::string)) {
-            auto type_pointer = static_cast<std::string*>(value);
-            std::cout << "name: " << name << " value: " << *type_pointer << std::endl;
+        if (type == Refl::TypeBase::getType<int>()) {
+            std::cout << "name: " << name << " value: " << 
+                    strong_field->getValueAs<int>(&test).value() << std::endl;
+        } else if (type == Refl::TypeBase::getType<float>()) {
+            std::cout << "name: " << name << " value: " << 
+            strong_field->getValueAs<float>(&test).value() << std::endl;
+        } else if (type == Refl::TypeBase::getType<std::string>()) {
+            std::cout << "name: " << name << " value: " << 
+            strong_field->getValueAs<std::string>(&test).value() << std::endl;
         } else {
             std::cout << "name: " << name << " value: unknown" << std::endl;
         }

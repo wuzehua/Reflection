@@ -8,28 +8,16 @@
 #include "field.hpp"
 
 namespace Refl {
-template<typename cls>    
-struct TypeReflClass;
-
-struct ReflClass {
-    template<typename cls>
-    static TypeReflClass<cls>& getClass(const cls& obj);
-
-    template<typename cls>
-    static TypeReflClass<cls>& getClass(cls* obj);
-
-    template<typename cls>
-    static TypeReflClass<cls>& getClass();
-
+struct ReflClassBase {
     virtual void* newInstance() = 0;
 };
 
 template<typename cls>
-struct TypeReflClass: public ReflClass {
+struct TypeReflClass: public ReflClassBase {
 
     static TypeReflClass& instance() {
-        static TypeReflClass reflClass;
-        return reflClass;
+        static TypeReflClass refl_class;
+        return refl_class;
     }
 
     void* newInstance() override {
@@ -75,19 +63,21 @@ struct TypeReflClass: public ReflClass {
     std::unordered_map<std::string, std::shared_ptr<Field<cls>>> m_field_map_;
 };
 
+namespace ReflClass {
 template<typename cls>
-TypeReflClass<cls>& ReflClass::getClass(const cls& obj) {
-    return ReflClass::getClass<cls>();
-}
-
-template<typename cls>
-TypeReflClass<cls>& ReflClass::getClass(cls* obj) {
-    return ReflClass::getClass<cls>();
-}
-
-template<typename cls>
-TypeReflClass<cls>& ReflClass::getClass() {
+TypeReflClass<cls>& getClass() {
     return TypeReflClass<cls>::instance();
 }
+
+template<typename cls>
+TypeReflClass<cls>& getClass(const cls& obj) {
+    return getClass<cls>();
+}
+
+template<typename cls>
+TypeReflClass<cls>& getClass(cls* obj) {
+    return getClass<cls>();
+}
+}  // namespace ReflClass
 
 }  // namespace Refl  
