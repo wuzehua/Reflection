@@ -1,15 +1,18 @@
 #pragma once
 
+#include <any>
+#include <optional>
 #include <string>
 #include <unordered_map>
 #include <vector>
 #include <memory>
 
 #include "field.hpp"
+#include "method.hpp"
 
 namespace Refl {
 struct ReflClassBase {
-    virtual void* newInstance() = 0;
+    virtual std::any newInstance() = 0;
 };
 
 template<typename cls>
@@ -20,7 +23,7 @@ struct TypeReflClass: public ReflClassBase {
         return refl_class;
     }
 
-    void* newInstance() override {
+    std::any newInstance() override {
         return newTypeInstance();
     }
 
@@ -40,12 +43,40 @@ struct TypeReflClass: public ReflClassBase {
         return *this;
     }
 
+    template<typename ret_type, class... args>
+    TypeReflClass& registerMethod(const std::string& name, ret_type (cls::*p)(args...)) {
+        this->m_method_map_[name] = std::make_shared<TypeMethod<cls, false, ret_type, args...>>(name, p);
+        return *this;
+    }
+
+    template<typename ret_type, class... args>
+    TypeReflClass& registerStaticMethod(const std::string& name, ret_type (*p)(args...)) {
+        this->m_static_method_map_[name] = std::make_shared<TypeMethod<cls, true, ret_type, args...>>(name, p);
+        return *this;
+    }
+
     std::weak_ptr<Field<cls>> getField(const std::string& name) {
         if (this->m_field_map_.count(name) == 0) {
             return nullptr;
         }
 
         return std::weak_ptr<Field<cls>>(this->m_field_map_[name]);
+    }
+
+    std::optional<std::weak_ptr<Method<cls, false>>> getMethod(const std::string& name) {
+        if (this->m_method_map_.count(name) == 0) {
+            return std::nullopt;
+        }
+
+        return std::make_optional(std::weak_ptr<Method<cls, false>>(this->m_method_map_[name]));
+    }
+
+    std::optional<std::weak_ptr<Method<cls, true>>> getStaticMethod(const std::string& name) {
+        if (this->m_static_method_map_.count(name) == 0) {
+            return std::nullopt;
+        }
+
+        return std::make_optional(std::weak_ptr<Method<cls, true>>(this->m_static_method_map_[name]));
     }
 
     std::vector<std::weak_ptr<Field<cls>>> getFields() {
@@ -61,6 +92,8 @@ struct TypeReflClass: public ReflClassBase {
 
   private:
     std::unordered_map<std::string, std::shared_ptr<Field<cls>>> m_field_map_;
+    std::unordered_map<std::string, std::shared_ptr<Method<cls, false>>> m_method_map_;
+    std::unordered_map<std::string, std::shared_ptr<Method<cls, true>>> m_static_method_map_;
 };
 
 namespace ReflClass {

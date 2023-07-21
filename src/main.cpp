@@ -9,6 +9,14 @@ struct A {
     static int b;
     float c;
     std::string d;
+
+    void func1(int h) {
+        std::cout << "func1: " << a + b + h << std::endl;
+    }
+
+    static void func2() {
+        std::cout << "func2: " << b * 2 << std::endl;
+    }
 };
 
 int A::b = 10;
@@ -20,7 +28,10 @@ int main(int argc, char** argv)
         .registerField("a", &A::a)
         .registerField("b", &A::b)
         .registerField("c", &A::c)
-        .registerField("d", &A::d);    
+        .registerField("d", &A::d)
+        .registerMethod("func1", &A::func1)
+        .registerStaticMethod("func2", &A::func2);
+      
     A test{};
     test.a = 15;
     test.b = 25;
@@ -35,7 +46,6 @@ int main(int argc, char** argv)
             continue;
         }
         auto name = strong_field->getName();
-        auto value = strong_field->getValue(&test);
         const auto& type = strong_field->getTypeInfo();
         if (type == Refl::TypeBase::getType<int>()) {
             std::cout << "name: " << name << " value: " << 
@@ -49,6 +59,12 @@ int main(int argc, char** argv)
         } else {
             std::cout << "name: " << name << " value: unknown" << std::endl;
         }
+    }
+
+    auto func1 = Refl::ReflClass::getClass(test).getMethod("func1");
+    auto strong_func1 = func1.value().lock();
+    if (strong_func1 != nullptr) {
+        strong_func1->invoke<void, int>(&test, 2);
     }
     return 0;
 }

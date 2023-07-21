@@ -1,5 +1,6 @@
 #pragma once
 
+#include <any>
 #include <string>
 #include <optional>
 #include <utility>
@@ -10,8 +11,8 @@ namespace Refl {
 template<typename cls>
 struct Field {
     std::string getName() const { return m_name_; }
-    virtual bool setValue(cls* obj, void* value) = 0;
-    virtual void* getValue(cls* obj) const = 0;
+    virtual bool setValue(cls* obj, std::any value) = 0;
+    virtual std::any getValue(cls* obj) const = 0;
     virtual std::string getTypeName() const = 0;
     virtual const TypeBase& getTypeInfo() const = 0;
 
@@ -23,12 +24,11 @@ struct Field {
     template<typename T>
     std::optional<T> getValueAs(cls* obj) {
         auto value = getValue(obj);
-        if (value == nullptr) {
+        if (!value.has_value()) {
             return std::nullopt;
         }
 
-        auto type_pointer = static_cast<T*>(value);
-        return std::make_optional<T>(*type_pointer);
+        return std::make_optional<T>(std::any_cast<T>(value));
     }
 
     bool isStaticMember() {
@@ -54,16 +54,20 @@ struct TypeField: public Field<cls> {
         this->m_is_static_memeber_ = is_static_member;
     }
 
-    bool setValue(cls* obj, void* value) override {
-        if (value == nullptr) {
+    bool setValue(cls* obj, std::any value) override {
+        if (!value.has_value()) {
             return false;
         }
 
         return realSetValue(obj, value);
     }
 
-    void* getValue(cls* obj) const override {
-        return realGetValue(obj);
+    std::any getValue(cls* obj) const override {
+        auto value = realGetValue(obj);
+        if (value.has_value()) {
+            return value.value();
+        }
+        return {};
     }
 
     std::string getTypeName() const override {
@@ -76,33 +80,33 @@ struct TypeField: public Field<cls> {
 
   private:
     template<bool U = is_static_member>
-    typename std::enable_if<U, bool>::type realSetValue(cls* obj, void* value) {
-        auto type_pointer = static_cast<type*>(value);
-        (*m_static_field_pointer_) = *type_pointer;
+    typename std::enable_if<U, bool>::type realSetValue(cls* obj, std::any value) {
+        auto type_value = std::any_cast<type>(value);
+        (*m_static_field_pointer_) = type_value;
         return true;
     }
 
     template<bool U = is_static_member>
-    typename std::enable_if<!U, bool>::type realSetValue(cls* obj, void* value) {
+    typename std::enable_if<!U, bool>::type realSetValue(cls* obj, std::any value) {
         if (obj == nullptr) {
             return false;
         }
-        auto type_pointer = static_cast<type*>(value);
-        obj->*m_field_pointer_ = *type_pointer;
+        auto type_value = std::any_cast<type>(value);
+        obj->*m_field_pointer_ = type_value;
         return true;
     }
 
     template<bool U = is_static_member>
-    typename std::enable_if<U, void>::type* realGetValue(cls* obj) const {
-        return m_static_field_pointer_;
+    std::optional<typename std::enable_if<U, type>::type> realGetValue(cls* obj) const {
+        return std::make_optional(*m_static_field_pointer_);
     }
 
     template<bool U = is_static_member>
-    typename std::enable_if<!U, void>::type* realGetValue(cls* obj) const {
+    std::optional<typename std::enable_if<!U, type>::type> realGetValue(cls* obj) const {
         if (obj == nullptr) {
-            return nullptr;
+            return std::nullopt;
         }
-        return &(obj->*m_field_pointer_);
+        return std::make_optional((obj->*m_field_pointer_));
     }
 
     type cls::* m_field_pointer_;
