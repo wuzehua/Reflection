@@ -15,8 +15,9 @@ struct A {
         return a * b * h;
     }
 
-    static void func2() {
-        std::cout << "func2: " << b * 2 << std::endl;
+    static int func2(const std::string& i, int a) {
+        std::cout << "func2: " << i << b * 2 + a << std::endl;
+        return b + a;
     }
 };
 
@@ -68,6 +69,16 @@ int main(int argc, char** argv)
         auto ret = strong_func1->invokeWithRetType(&test, Refl::TypeUtils::getType<int>(), 2);
         if (ret.has_value()) {
             std::cout << "func1 result: " << ret.value() << std::endl;
+        }
+    }
+
+    auto func2 = Refl::ReflClass::getClass(test).getStaticMethod("func2");
+    auto strong_func2 = func2.value().lock();
+    if (strong_func2 != nullptr) {
+        std::string input = "input: ";
+        auto ret = strong_func2->invoke<int, const std::string&, int>(&test, input, 1);
+        if (ret.has_value()) {
+            std::cout << "func2 result: " << ret.value() << std::endl;
         }
     }
     return 0;
