@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "type.hpp"
+#include "type_union.hpp"
 
 namespace Refl {
 template<typename cls>
@@ -44,13 +45,13 @@ template<typename cls, typename type, bool is_static_member = false>
 struct TypeField: public Field<cls> {
     TypeField(const std::string& name, type cls::* p) {
         this->m_name_ = name;
-        this->m_field_pointer_ = p;
+        this->m_field_pointer_.first = p;
         this->m_is_static_memeber_ = is_static_member;
     }
 
     TypeField(const std::string& name, type* p) {
         this->m_name_ = name;
-        this->m_static_field_pointer_ = p;
+        this->m_field_pointer_.second = p;
         this->m_is_static_memeber_ = is_static_member;
     }
 
@@ -82,7 +83,7 @@ struct TypeField: public Field<cls> {
     template<bool U = is_static_member>
     typename std::enable_if<U, bool>::type realSetValue(cls* obj, std::any value) {
         auto type_value = std::any_cast<type>(value);
-        (*m_static_field_pointer_) = type_value;
+        (*(m_field_pointer_.second)) = type_value;
         return true;
     }
 
@@ -92,13 +93,13 @@ struct TypeField: public Field<cls> {
             return false;
         }
         auto type_value = std::any_cast<type>(value);
-        obj->*m_field_pointer_ = type_value;
+        obj->*(m_field_pointer_.first) = type_value;
         return true;
     }
 
     template<bool U = is_static_member>
     std::optional<typename std::enable_if<U, type>::type> realGetValue(cls* obj) const {
-        return std::make_optional(*m_static_field_pointer_);
+        return std::make_optional(*(m_field_pointer_.second));
     }
 
     template<bool U = is_static_member>
@@ -106,10 +107,9 @@ struct TypeField: public Field<cls> {
         if (obj == nullptr) {
             return std::nullopt;
         }
-        return std::make_optional((obj->*m_field_pointer_));
+        return std::make_optional((obj->*(m_field_pointer_.first)));
     }
 
-    type cls::* m_field_pointer_;
-    type* m_static_field_pointer_;
+    TypeUnion<type cls::*, type*> m_field_pointer_;
 };
 }  // namespace Refl

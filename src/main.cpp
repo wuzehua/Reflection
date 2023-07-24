@@ -10,8 +10,9 @@ struct A {
     float c;
     std::string d;
 
-    void func1(int h) {
+    int func1(int h) {
         std::cout << "func1: " << a + b + h << std::endl;
+        return a * b * h;
     }
 
     static void func2() {
@@ -64,7 +65,10 @@ int main(int argc, char** argv)
     auto func1 = Refl::ReflClass::getClass(test).getMethod("func1");
     auto strong_func1 = func1.value().lock();
     if (strong_func1 != nullptr) {
-        strong_func1->invoke<void, int>(&test, 2);
+        auto ret = strong_func1->invokeWithRetType(&test, Refl::TypeUtils::getType<int>(), 2);
+        if (ret.has_value()) {
+            std::cout << "func1 result: " << ret.value() << std::endl;
+        }
     }
     return 0;
 }

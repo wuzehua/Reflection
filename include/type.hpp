@@ -37,4 +37,11 @@ template<typename T>
 const TypeBase& TypeBase::getType() {
     return Type<T>::instance();
 }
+
+namespace TypeUtils {
+template<typename T>
+const Type<T>& getType() {
+    return Type<T>::instance();
+}
+}  // namespace TypeUtils
 }  // namespace Refl
