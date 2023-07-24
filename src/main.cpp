@@ -36,7 +36,7 @@ int main(int argc, char** argv)
       
     A test{};
     test.a = 15;
-    test.b = 25;
+    A::b = 25;
     test.c = 100.5f;
     test.d = "test";
 

@@ -11,11 +11,11 @@
 namespace Refl {
 template<typename cls>
 struct Field {
-    std::string getName() const { return m_name_; }
+    [[nodiscard]] std::string getName() const { return m_name_; }
     virtual bool setValue(cls* obj, std::any value) = 0;
     virtual std::any getValue(cls* obj) const = 0;
-    virtual std::string getTypeName() const = 0;
-    virtual const TypeBase& getTypeInfo() const = 0;
+    [[nodiscard]] virtual std::string getTypeName() const = 0;
+    [[nodiscard]] virtual const TypeBase& getTypeInfo() const = 0;
 
     template<typename T>
     bool setFieldValue(cls* obj, T value) {
@@ -33,12 +33,12 @@ struct Field {
     }
 
     bool isStaticMember() {
-        return m_is_static_memeber_;
+        return m_is_static_member_;
     }
 
   protected:
     std::string m_name_;
-    bool m_is_static_memeber_{false}; 
+    bool m_is_static_member_{false};
 };
 
 template<typename cls, typename type, bool is_static_member = false>
@@ -46,13 +46,13 @@ struct TypeField: public Field<cls> {
     TypeField(const std::string& name, type cls::* p) {
         this->m_name_ = name;
         this->m_field_pointer_.first = p;
-        this->m_is_static_memeber_ = is_static_member;
+        this->m_is_static_member_ = is_static_member;
     }
 
     TypeField(const std::string& name, type* p) {
         this->m_name_ = name;
         this->m_field_pointer_.second = p;
-        this->m_is_static_memeber_ = is_static_member;
+        this->m_is_static_member_ = is_static_member;
     }
 
     bool setValue(cls* obj, std::any value) override {
@@ -71,11 +71,11 @@ struct TypeField: public Field<cls> {
         return {};
     }
 
-    std::string getTypeName() const override {
+    [[nodiscard]] std::string getTypeName() const override {
         return TypeBase::getType<type>().getName();
     }
 
-    const TypeBase& getTypeInfo() const override {
+    [[nodiscard]] const TypeBase& getTypeInfo() const override {
         return TypeBase::getType<type>();
     }
 

@@ -22,8 +22,8 @@ void invokeVoidMethod(Method<cls, is_static>* method, cls* obj, args&&... func_a
 
 template<typename cls, bool is_static>
 struct Method {
-    std::string getName() const { return m_method_name_; }
-    bool isStaticMethod() const { return m_is_static_method_; }
+    [[nodiscard]] std::string getName() const { return m_method_name_; }
+    [[nodiscard]] bool isStaticMethod() const { return m_is_static_method_; }
 
     template<typename ret_type, class... args>
     typename std::enable_if<!std::is_same_v<ret_type, void>, std::optional<ret_type>>::type invoke(cls* obj, args&&... func_args) {
@@ -73,12 +73,12 @@ struct TypeMethod: public Method<cls, is_static> {
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
-    typename std::enable_if<is_static_ && std::is_same_v<R, void>, void>::type invoke(cls* obj, args&&... func_args) {
+    typename std::enable_if<is_static_ && std::is_same_v<R, void>, void>::type realInvoke(cls* obj, args&&... func_args) {
         (*(m_method_ptr_.first))(std::forward<args>(func_args)...);
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
-    typename std::enable_if<!is_static_ && std::is_same_v<R, void>, void>::type invoke(cls* obj, args&&... func_args) {
+    typename std::enable_if<!is_static_ && std::is_same_v<R, void>, void>::type realInvoke(cls* obj, args&&... func_args) {
         if (obj == nullptr) {
             return;
         }
@@ -87,12 +87,12 @@ struct TypeMethod: public Method<cls, is_static> {
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
-    typename std::enable_if<is_static_ && !std::is_same_v<R, void>, std::optional<R>>::type invoke(cls* obj, args&&... func_args) {
+    typename std::enable_if<is_static_ && !std::is_same_v<R, void>, std::optional<R>>::type realInvoke(cls* obj, args&&... func_args) {
         return std::make_optional<R>((*(m_method_ptr_.second))(std::forward<args>(func_args)...));
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
-    typename std::enable_if<!is_static_ && !std::is_same_v<R, void>, std::optional<R>>::type invoke(cls* obj, args&&... func_args) {
+    typename std::enable_if<!is_static_ && !std::is_same_v<R, void>, std::optional<R>>::type realInvoke(cls* obj, args&&... func_args) {
         if (obj == nullptr) {
             return std::nullopt;
         }
@@ -107,13 +107,13 @@ namespace MethodUtils {
 template<typename cls, bool is_static, typename ret_type, class... args>
 std::optional<ret_type> invokeMethod(Method<cls, is_static>* method, cls* obj, args&&... func_args) {
     auto real_method = static_cast<TypeMethod<cls, is_static, ret_type, args...>*>(method);
-    return real_method->invoke(obj, std::forward<args>(func_args)...);
+    return real_method->realInvoke(obj, std::forward<args>(func_args)...);
 }
 
 template<typename cls, bool is_static, class... args>
 void invokeVoidMethod(Method<cls, is_static>* method, cls* obj, args&&... func_args) {
     auto real_method = static_cast<TypeMethod<cls, is_static, void, args...>*>(method);
-    real_method->invoke(obj, std::forward<args>(func_args)...);
+    real_method->realInvoke(obj, std::forward<args>(func_args)...);
 }
 }  // namespace MethodUtils
 }  // namespace Refl

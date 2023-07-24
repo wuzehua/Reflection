@@ -4,8 +4,8 @@
 
 namespace Refl {
 struct TypeBase {
-    virtual std::string getName() const = 0;
-    virtual uint64_t getId() const = 0;
+    [[nodiscard]] virtual std::string getName() const = 0;
+    [[nodiscard]] virtual uint64_t getId() const = 0;
 
     inline bool operator ==(const TypeBase& type) const {
         return getId() == type.getId();
@@ -23,11 +23,11 @@ struct Type: public TypeBase {
         return type_instance;
     }
 
-    std::string getName() const override {
+    [[nodiscard]] std::string getName() const override {
         return "";
     }
 
-    uint64_t getId() const override {
+    [[nodiscard]] uint64_t getId() const override {
         return (uint64_t)(&instance());
     }
   private:
