@@ -10,7 +10,7 @@ struct A {
     float c;
     std::string d;
 
-    int func1(int h) {
+    int func1(int h) const {
         std::cout << "func1: " << a + b + h << std::endl;
         return a * b * h;
     }

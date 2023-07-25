@@ -24,6 +24,7 @@ template<typename cls, bool is_static>
 struct Method {
     [[nodiscard]] std::string getName() const { return m_method_name_; }
     [[nodiscard]] bool isStaticMethod() const { return m_is_static_method_; }
+    [[nodiscard]] bool isConstMethod() const { return m_is_const_method_; }
 
     template<typename ret_type, class... args>
     typename std::enable_if<!std::is_same_v<ret_type, void>, std::optional<ret_type>>::type invoke(cls* obj, args&&... func_args) {
@@ -53,28 +54,39 @@ struct Method {
   protected:
     std::string m_method_name_;
     bool m_is_static_method_{false};
+    bool m_is_const_method_{false};
 };
 
 template<typename cls, bool is_static, typename ret_type, class... args>
 struct TypeMethod: public Method<cls, is_static> {
     using MethodPtr = ret_type (cls::*)(args...);
+    using MethodConstPtr = ret_type (cls::*)(args...) const;
     using MethodStaticPtr = ret_type (*)(args...);
 
     TypeMethod(const std::string& name, MethodPtr p) {
         this->m_method_name_ = name;
-        this->m_method_ptr_.first = p;
+        this->m_method_ptr_.first.first = p;
         this->m_is_static_method_ = is_static;
+        this->m_is_const_method_ = false;
+    }
+
+    TypeMethod(const std::string& name, MethodConstPtr p) {
+        this->m_method_name_ = name;
+        this->m_method_ptr_.first.second = p;
+        this->m_is_static_method_ = is_static;
+        this->m_is_const_method_ = false;
     }
 
     TypeMethod(const std::string& name, MethodStaticPtr p) {
         this->m_method_name_ = name;
         this->m_method_ptr_.second = p;
         this->m_is_static_method_ = is_static;
+        this->m_is_const_method_ = false;
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
     typename std::enable_if<is_static_ && std::is_same_v<R, void>, void>::type realInvoke(cls* obj, args&&... func_args) {
-        (*(m_method_ptr_.first))(std::forward<args>(func_args)...);
+        (*(m_method_ptr_.second))(std::forward<args>(func_args)...);
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
@@ -83,7 +95,11 @@ struct TypeMethod: public Method<cls, is_static> {
             return;
         }
 
-        (obj->*(m_method_ptr_.first))(std::forward<args>(func_args)...);
+        if (this->m_is_const_method_) {
+            (obj->*(m_method_ptr_.first.second))(std::forward<args>(func_args)...);
+        } else {
+            (obj->*(m_method_ptr_.first.first))(std::forward<args>(func_args)...);
+        }
     }
 
     template<bool is_static_ = is_static, typename R = ret_type>
@@ -96,11 +112,16 @@ struct TypeMethod: public Method<cls, is_static> {
         if (obj == nullptr) {
             return std::nullopt;
         }
-        return std::make_optional<R>((obj->*(m_method_ptr_.first))(std::forward<args>(func_args)...));
+
+        if (this->m_is_const_method_) {
+            return std::make_optional<R>((obj->*(m_method_ptr_.first.second))(std::forward<args>(func_args)...));
+        } else {
+            return std::make_optional<R>((obj->*(m_method_ptr_.first.first))(std::forward<args>(func_args)...));
+        }
     }
 
   private:
-    TypeUnion<MethodPtr, MethodStaticPtr> m_method_ptr_;
+    TypeUnion<TypeUnion<MethodPtr, MethodConstPtr>, MethodStaticPtr> m_method_ptr_;
 };
 
 namespace MethodUtils {

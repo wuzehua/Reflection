@@ -50,6 +50,12 @@ struct TypeReflClass: public ReflClassBase {
     }
 
     template<typename ret_type, class... args>
+    TypeReflClass& registerMethod(const std::string& name, ret_type (cls::*p)(args...) const) {
+        this->m_method_map_[name] = std::make_shared<TypeMethod<cls, false, ret_type, args...>>(name, p);
+        return *this;
+    }
+
+    template<typename ret_type, class... args>
     TypeReflClass& registerStaticMethod(const std::string& name, ret_type (*p)(args...)) {
         this->m_static_method_map_[name] = std::make_shared<TypeMethod<cls, true, ret_type, args...>>(name, p);
         return *this;
