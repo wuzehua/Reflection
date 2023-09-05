@@ -9,6 +9,7 @@
 
 #include "field.hpp"
 #include "method.hpp"
+#include "constructor.hpp"
 
 namespace Refl {
 struct ReflClassBase {
@@ -61,6 +62,13 @@ struct TypeReflClass: public ReflClassBase {
         return *this;
     }
 
+    template<class... args>
+    TypeReflClass& registerConstructor() {
+        auto constructor = std::make_shared<Constructor<cls, args...>>();
+        m_constructor_list_.emplace_back(constructor);
+        return *this;
+    }
+
     std::weak_ptr<Field<cls>> getField(const std::string& name) {
         if (this->m_field_map_.count(name) == 0) {
             return nullptr;
@@ -96,10 +104,21 @@ struct TypeReflClass: public ReflClassBase {
         return fields;
     }
 
+    template<class... args>
+    std::optional<std::weak_ptr<ConstructorBase<cls>>> getConstructor() {
+        for (const auto& constructor : m_constructor_list_) {
+            if (constructor->template isMatch<args...>()) {
+                return std::make_optional(std::weak_ptr<ConstructorBase<cls>>(constructor));
+            }
+        }
+        return std::nullopt;
+    }
+
   private:
     std::unordered_map<std::string, std::shared_ptr<Field<cls>>> m_field_map_;
     std::unordered_map<std::string, std::shared_ptr<Method<cls, false>>> m_method_map_;
     std::unordered_map<std::string, std::shared_ptr<Method<cls, true>>> m_static_method_map_;
+    std::vector<std::shared_ptr<ConstructorBase<cls>>> m_constructor_list_;
 };
 
 namespace ReflClass {

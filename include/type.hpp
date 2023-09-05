@@ -13,6 +13,9 @@ struct TypeBase {
 
     template<typename T>
     static const TypeBase& getType();
+
+    template<typename T>
+    static TypeBase* getTypePtr();
 };
 
 template<typename type>
@@ -36,6 +39,11 @@ struct Type: public TypeBase {
 template<typename T>
 const TypeBase& TypeBase::getType() {
     return Type<T>::instance();
+}
+
+template<typename T>
+TypeBase* TypeBase::getTypePtr() {
+    return &(Type<T>::instance());
 }
 
 namespace TypeUtils {

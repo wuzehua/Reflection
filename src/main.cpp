@@ -10,6 +10,19 @@ struct A {
     float c;
     std::string d;
 
+    A() {
+        a = 100;
+        b = 20;
+        c = 35.f;
+        d = "d";
+    }
+
+    A(int a, float c, std::string d) {
+        this->a = a;
+        this->c = c;
+        this->d = d;
+    }
+
     int func1(int h) const {
         std::cout << "func1: " << a + b + h << std::endl;
         return a * b * h;
@@ -31,6 +44,8 @@ int main(int argc, char** argv)
         .registerField("b", &A::b)
         .registerField("c", &A::c)
         .registerField("d", &A::d)
+        .registerConstructor<>()
+        .registerConstructor<int, float, std::string>()
         .registerMethod("func1", &A::func1)
         .registerStaticMethod("func2", &A::func2);
       
@@ -79,6 +94,26 @@ int main(int argc, char** argv)
         auto ret = strong_func2->invoke<int, const std::string&, int>(&test, input, 1);
         if (ret.has_value()) {
             std::cout << "func2 result: " << ret.value() << std::endl;
+        }
+    }
+
+    auto empty_constructor_opt = Refl::ReflClass::getClass<A>().getConstructor<>();
+    if (empty_constructor_opt.has_value()) {
+        auto strong_empty_constructor = empty_constructor_opt.value().lock();
+        if (strong_empty_constructor != nullptr) {
+            auto obj = strong_empty_constructor->instance();
+            std::cout << "A { a: " << obj.a << ", b: " << A::b << ", c: " << obj.c << ", d: " <<
+                obj.d << " }" << std::endl;
+        }
+    }
+
+    auto constructor_opt = Refl::ReflClass::getClass<A>().getConstructor<int, float, std::string>();
+    if (constructor_opt.has_value()) {
+        auto strong_constructor = constructor_opt.value().lock();
+        if (strong_constructor != nullptr) {
+            auto obj = strong_constructor->instance<int, float, std::string>(11, 3.f, "dTest");
+            std::cout << "A { a: " << obj.a << ", b: " << A::b << ", c: " << obj.c << ", d: " <<
+                      obj.d << " }" << std::endl;
         }
     }
     return 0;
