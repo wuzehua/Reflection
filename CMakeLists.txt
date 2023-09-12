@@ -1,13 +1,10 @@
 cmake_minimum_required(VERSION 3.13)
-project(Reflection)
+project(reflection)
+
+option(BUILD_REFLECTION_TESTS "Build tests" ON)
 
 set(CMAKE_CXX_STANDARD 20)
 
-include_directories(include)
-
-set(SOURCE 
-    ${SOURCE}
-    src/main.cpp
-)
-
-add_executable(demo ${SOURCE})
+if(BUILD_REFLECTION_TESTS)
+    add_subdirectory(test)
+endif()
