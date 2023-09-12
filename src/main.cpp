@@ -1,9 +1,9 @@
 #include <iostream>
 #include <string>
 
-#include "../include/field.hpp"
-#include "../include/refl_class.hpp"
-#include "../include/class_builder.hpp"
+#include "field.hpp"
+#include "refl_class.hpp"
+#include "class_builder.hpp"
 
 struct A {
     int a;
@@ -21,12 +21,18 @@ struct A {
     A(int a, float c, std::string d) {
         this->a = a;
         this->c = c;
-        this->d = d;
+        this->d = std::move(d);
     }
 
     int func1(int h) const {
         std::cout << "func1: " << a + b + h << std::endl;
         return a * b * h;
+    }
+
+    int addAndRet(int h) {
+        a += h;
+        std::cout << "addAndRet: " << a << std::endl;
+        return a;
     }
 
     static int func2(const std::string& i, int a) {
@@ -48,6 +54,7 @@ int main(int argc, char** argv)
         .registerConstructor<>()
         .registerConstructor<int, float, std::string>()
         .registerMethod("func1", &A::func1)
+        .registerMethod("addAndRet", &A::addAndRet)
         .registerStaticMethod("func2", &A::func2);
       
     A test{};
@@ -95,6 +102,15 @@ int main(int argc, char** argv)
         auto ret = strong_func2->invoke<int, const std::string&, int>(&test, input, 1);
         if (ret.has_value()) {
             std::cout << "func2 result: " << ret.value() << std::endl;
+        }
+    }
+
+    auto func_add_and_ret = Refl::ReflClass::getClass(test).getMethod("addAndRet");
+    auto strong_func_add_and_ret = func_add_and_ret.value().lock();
+    if (strong_func_add_and_ret != nullptr) {
+        auto ret = strong_func_add_and_ret->invoke<int, int>(&test, 50);
+        if (ret.has_value()) {
+            std::cout << "addAndRet result: " << ret.value() << std::endl;
         }
     }
 
