@@ -9,15 +9,38 @@
 #include "type_union.hpp"
 
 namespace Refl {
-template<typename cls>
-struct Field {
+struct FieldBase {
     [[nodiscard]] std::string getName() const { return m_name_; }
+    [[nodiscard]] virtual std::string getTypeName() const = 0;
+    [[nodiscard]] virtual const TypeBase& getTypeInfo() const = 0;
+    [[nodiscard]] bool isStaticMember() const {
+        return m_is_static_member_;
+    }
+
+    virtual bool setObjValue(void* obj, void* value) = 0;
+    virtual void* getObjValue(void* obj) const = 0;
+
+    template<typename T>
+    std::optional<T> getObjValueAs(void * obj) {
+        auto value = getObjValue(obj);
+        if (value == nullptr) {
+            return std::nullopt;
+        }
+
+        return std::make_optional<T>(*(static_cast<T*>(value)));
+    }
+
+  protected:
+    std::string m_name_;
+    bool m_is_static_member_{false};
+};
+
+template<typename cls>
+struct Field: public FieldBase {
     virtual bool setValueAny(cls* obj, std::any value) = 0;
     virtual bool setValue(cls* obj, void* value) = 0;
     virtual void* getValue(cls* obj) const = 0;
     virtual std::any getValueAny(cls* obj) const = 0;
-    [[nodiscard]] virtual std::string getTypeName() const = 0;
-    [[nodiscard]] virtual const TypeBase& getTypeInfo() const = 0;
 
     template<typename T>
     bool setFieldValue(cls* obj, T value) {
@@ -34,13 +57,15 @@ struct Field {
         return std::make_optional<T>(*(static_cast<T*>(value)));
     }
 
-    bool isStaticMember() {
-        return m_is_static_member_;
+    bool setObjValue(void* obj, void* value) override {
+        auto type_obj = static_cast<cls*>(obj);
+        return setValue(type_obj, value);
     }
 
-  protected:
-    std::string m_name_;
-    bool m_is_static_member_{false};
+    void* getObjValue(void* obj) const override {
+        auto type_obj = static_cast<cls*>(obj);
+        return getValue(type_obj);
+    }
 };
 
 template<typename cls, typename type, bool is_static_member = false>

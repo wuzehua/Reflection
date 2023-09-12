@@ -13,7 +13,33 @@
 
 namespace Refl {
 struct ReflClassBase {
-    virtual std::any newInstance() = 0;
+    template<class... args>
+    std::any newInstance(args&&... constructor_args) {
+        auto constructor = findConstructor(std::vector<TypeBase*>({
+            TypeBase::getTypePtr<args>()...
+        }));
+
+        if (constructor == nullptr) {
+            return {};
+        }
+
+        return constructor->instanceObj(std::forward<args>(constructor_args)...);
+    }
+
+    template<class... args>
+    std::shared_ptr<void> newInstancePtr(args&&... constructor_args) {
+        auto constructor = findConstructor(std::vector<TypeBase*>({
+            TypeBase::getTypePtr<args>()...
+        }));
+
+        if (constructor == nullptr) {
+            return nullptr;
+        }
+
+        return constructor->instanceObjPtr(std::forward<args>(constructor_args)...);
+    }
+  protected:
+    virtual std::shared_ptr<ConstructorBase> findConstructor(std::vector<TypeBase*>&& type_list) = 0;
 };
 
 template<typename cls>
@@ -22,14 +48,6 @@ struct TypeReflClass: public ReflClassBase {
     static TypeReflClass& instance() {
         static TypeReflClass refl_class;
         return refl_class;
-    }
-
-    std::any newInstance() override {
-        return newTypeInstance();
-    }
-
-    cls* newTypeInstance() {
-        return nullptr;
     }
 
     template<typename T>
@@ -64,7 +82,7 @@ struct TypeReflClass: public ReflClassBase {
 
     template<class... args>
     TypeReflClass& registerConstructor() {
-        auto constructor = std::make_shared<Constructor<cls, args...>>();
+        auto constructor = std::make_shared<TypeConstructor<cls, args...>>();
         m_constructor_list_.emplace_back(constructor);
         return *this;
     }
@@ -105,20 +123,34 @@ struct TypeReflClass: public ReflClassBase {
     }
 
     template<class... args>
-    std::optional<std::weak_ptr<ConstructorBase<cls>>> getConstructor() {
+    std::optional<std::weak_ptr<Constructor<cls>>> getConstructor() {
         for (const auto& constructor : m_constructor_list_) {
-            if (constructor->template isMatch<args...>()) {
-                return std::make_optional(std::weak_ptr<ConstructorBase<cls>>(constructor));
+            if (constructor->template isMatchTemplate<args...>()) {
+                return std::make_optional(std::weak_ptr<Constructor<cls>>(constructor));
             }
         }
         return std::nullopt;
+    }
+
+  protected:
+    std::shared_ptr<ConstructorBase> findConstructor(std::vector<TypeBase*>&& type_list) override {
+        for (auto constructor : m_constructor_list_) {
+            if (constructor == nullptr) {
+                continue;
+            }
+
+            if (constructor->isMatch(std::move(type_list))) {
+                return constructor;
+            }
+        }
+        return nullptr;
     }
 
   private:
     std::unordered_map<std::string, std::shared_ptr<Field<cls>>> m_field_map_;
     std::unordered_map<std::string, std::shared_ptr<Method<cls, false>>> m_method_map_;
     std::unordered_map<std::string, std::shared_ptr<Method<cls, true>>> m_static_method_map_;
-    std::vector<std::shared_ptr<ConstructorBase<cls>>> m_constructor_list_;
+    std::vector<std::shared_ptr<Constructor<cls>>> m_constructor_list_;
 };
 
 namespace ReflClass {
