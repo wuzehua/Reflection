@@ -50,43 +50,6 @@ struct TypeReflClass: public ReflClassBase {
         return refl_class;
     }
 
-    template<typename T>
-    TypeReflClass& registerField(const std::string& name, T cls::* p) {
-        this->m_field_map_[name] = std::make_shared<TypeField<cls, T, false>>(name, p);
-        return *this;
-    }
-
-    template<typename T>
-    TypeReflClass& registerField(const std::string& name, T* p) {
-        this->m_field_map_[name] = std::make_shared<TypeField<cls, T, true>>(name, p);
-        return *this;
-    }
-
-    template<typename ret_type, class... args>
-    TypeReflClass& registerMethod(const std::string& name, ret_type (cls::*p)(args...)) {
-        this->m_method_map_[name] = std::make_shared<TypeMethod<cls, false, ret_type, args...>>(name, p);
-        return *this;
-    }
-
-    template<typename ret_type, class... args>
-    TypeReflClass& registerMethod(const std::string& name, ret_type (cls::*p)(args...) const) {
-        this->m_method_map_[name] = std::make_shared<TypeMethod<cls, false, ret_type, args...>>(name, p);
-        return *this;
-    }
-
-    template<typename ret_type, class... args>
-    TypeReflClass& registerStaticMethod(const std::string& name, ret_type (*p)(args...)) {
-        this->m_static_method_map_[name] = std::make_shared<TypeMethod<cls, true, ret_type, args...>>(name, p);
-        return *this;
-    }
-
-    template<class... args>
-    TypeReflClass& registerConstructor() {
-        auto constructor = std::make_shared<TypeConstructor<cls, args...>>();
-        m_constructor_list_.emplace_back(constructor);
-        return *this;
-    }
-
     std::weak_ptr<Field<cls>> getField(const std::string& name) {
         if (this->m_field_map_.count(name) == 0) {
             return nullptr;
@@ -147,6 +110,9 @@ struct TypeReflClass: public ReflClassBase {
     }
 
   private:
+    template<class cls_type = cls>
+    friend class ClassBuilder;
+
     std::unordered_map<std::string, std::shared_ptr<Field<cls>>> m_field_map_;
     std::unordered_map<std::string, std::shared_ptr<Method<cls, false>>> m_method_map_;
     std::unordered_map<std::string, std::shared_ptr<Method<cls, true>>> m_static_method_map_;

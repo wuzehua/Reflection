@@ -3,6 +3,7 @@
 
 #include "../include/field.hpp"
 #include "../include/refl_class.hpp"
+#include "../include/class_builder.hpp"
 
 struct A {
     int a;
@@ -39,7 +40,7 @@ int A::b = 10;
 int main(int argc, char** argv)
 {
     std::cout << "hello world!" << std::endl;
-    Refl::ReflClass::getClass<A>()
+    Refl::ClassBuilder<A>()
         .registerField("a", &A::a)
         .registerField("b", &A::b)
         .registerField("c", &A::c)
