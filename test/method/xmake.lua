@@ -1,0 +1,5 @@
+target("method_test")
+    set_kind("binary")
+    add_options("build_reflection_test")
+    add_files("method_test.cpp")
+target_end()
