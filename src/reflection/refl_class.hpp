@@ -23,7 +23,7 @@ struct ReflClassBase {
             return {};
         }
 
-        return constructor->instanceObj(std::forward<args>(constructor_args)...);
+        return constructor->instanceObj(ArgUtils::makeArgs(std::forward<args>(constructor_args)...));
     }
 
     template<class... args>
@@ -36,7 +36,7 @@ struct ReflClassBase {
             return nullptr;
         }
 
-        return constructor->instanceObjPtr(std::forward<args>(constructor_args)...);
+        return constructor->instanceObjPtr(ArgUtils::makeArgs(std::forward<args>(constructor_args)...));
     }
   protected:
     virtual std::shared_ptr<ConstructorBase> findConstructor(std::vector<TypeBase*>&& type_list) = 0;
